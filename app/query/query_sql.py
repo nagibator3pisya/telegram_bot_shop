@@ -56,3 +56,4 @@ async def get_user_profile(user_id: int, session):
     user_profile = result.scalar_one_or_none()
     logger.info(f"User profile found: {user_profile}")
     return user_profile
+
