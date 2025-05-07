@@ -4,7 +4,7 @@ from logging.config import fileConfig
 from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
-from models.models import User
+from models.models import User,Profile,Product,Category
 from alembic import context
 
 from app.config import database_url

@@ -1,122 +1,56 @@
-import datetime
-from typing import List
+
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy import BigInteger, Text, ForeignKey, String, Column, Table, Integer, TIMESTAMP
 from database.database import Base
 
+# Промежуточная таблица для связи "многие ко многим" между User и Product
+user_products = Table(
+    'user_products', Base.metadata,
+    Column('user_id', ForeignKey('user.id'), primary_key=True),
+    Column('product_id', ForeignKey('product.id'), primary_key=True)
+)
 
-# class User(Base):
-#     __tablename__ = 'users'
-#     telegram_id: Mapped[int] = mapped_column(BigInteger, unique=True, nullable=False)
-#     username: Mapped[str | None] = mapped_column(String(50))
-#     first_name: Mapped[str | None] = mapped_column(String(50))
-#     last_name: Mapped[str | None] = mapped_column(String(50))
-#     profile: Mapped["Profile"] = relationship("Profile", back_populates="user", uselist=False)
-#     def __repr__(self):
-#         return f"<User(id={self.id}, telegram_id={self.telegram_id}, username='{self.username}')>"
-#
-#
-#
-#
-#
-# class Category(Base):
-#     """
-#     Категория товаров. Содержит связь с товарами.
-#     """
-#     __tablename__ = 'categories'
-#
-#     category_name: Mapped[str] = mapped_column(Text, nullable=False)
-#     products: Mapped[List["Product"]] = relationship(
-#         "Product",
-#         back_populates="category",
-#         cascade="all, delete-orphan"
-#     )
-#
-#     def __repr__(self):
-#         return f"<Category(id={self.id}, name='{self.category_name}')>"
-#
-#
-# class Product(Base):
-#     """
-#     Описывает товар с полями: название, описание, цена,  скрытый контент.
-#     """
-#     __tablename__ = 'products'
-#     name: Mapped[str] = mapped_column(Text)
-#     description: Mapped[str] = mapped_column(Text)
-#     price: Mapped[int]
-#     category_id: Mapped[int] = mapped_column(ForeignKey('categories.id'))
-#     hidden_content: Mapped[str] = mapped_column(Text)
-#
-#     category: Mapped["Category"] = relationship("Category", back_populates="products")
-#     # Отношение для получения покупателей
-#     buyers: Mapped[List["Profile"]] = relationship("Profile", back_populates='purchased_products')
-#     def __repr__(self):
-#         return f"<Product(id={self.id}, name='{self.name}', price={self.price})>"
-#
-#
-#
-#
-#
-# class Profile(Base):
-#     __tablename__ = 'profiles'
-#     user_id: Mapped[int] = mapped_column(ForeignKey('users.id'))
-#     username: Mapped[str | None] = mapped_column(String(50))
-#     first_name: Mapped[str | None] = mapped_column(String(50))
-#     last_name: Mapped[str|None] = mapped_column(String(50))
-#     # Отношение к пользователю
-#     user: Mapped["User"] = relationship("User", back_populates="profile")
-#
-#     purchased_products: Mapped[List["Product"]] = relationship(
-#         "Product",  back_populates="buyers"
-#     )
-#     def __repr__(self):
-#         return (f"<Profile(id={self.id}, user_id={self.user_id}, "
-#                 f"username = {self.username},purchased_products = {self.purchased_products},date={self.created_at})>")
 class User(Base):
-    __tablename__ = 'users'
-    telegram_id: Mapped[int] = mapped_column(Integer, unique=True, nullable=False)
-    username: Mapped[str | None] = mapped_column(String(50))
-    first_name: Mapped[str | None] = mapped_column(String(50))
-    last_name: Mapped[str | None] = mapped_column(String(50))
-    profile: Mapped["Profile"] = relationship("Profile", back_populates="user", uselist=False)
+    __tablename__ = 'user'
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    telegram_id: Mapped[int] = mapped_column(BigInteger, unique=True, )
+    username: Mapped[str] = mapped_column(String(50))
+    first_name: Mapped[str] = mapped_column(String(50))
+    last_name: Mapped[str] = mapped_column(String(50))
+
+    # Связь с профилем
+    profile = relationship("Profile", back_populates="user", uselist=False)
+    # Связь с продуктами через промежуточную таблицу
+    purchased_products = relationship("Product", secondary=user_products, back_populates="users")
+
 
 class Profile(Base):
-    __tablename__ = 'profiles'
-    user_id: Mapped[int] = mapped_column(ForeignKey('users.id'), primary_key=True)
-    username: Mapped[str | None] = mapped_column(String(50))
-    first_name: Mapped[str | None] = mapped_column(String(50))
-    last_name: Mapped[str | None] = mapped_column(String(50))
-    user: Mapped["User"] = relationship("User", back_populates="profile")
+    __tablename__ = 'profile'
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey('user.id'))
+    first_name: Mapped[str] = mapped_column(String(50),nullable=True)
+    last_name: Mapped[str] = mapped_column(String(50),nullable=True)
+
+
+    # Связь с пользователем
+    user = relationship("User", back_populates="profile")
+
 
 class Category(Base):
-    __tablename__ = 'categories'
-    category_name: Mapped[str] = mapped_column(Text, nullable=False)
-    products: Mapped[List["Product"]] = relationship(
-        "Product",
-        back_populates="category",
-        cascade="all, delete-orphan"
-    )
+    __tablename__ = 'category'
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name: Mapped[str] = mapped_column(String(50), nullable=False)
+
+    # Связь с продуктами
+    products = relationship("Product", back_populates="category")
 
 class Product(Base):
-    __tablename__ = 'products'  # Явно указываем имя таблицы, если нужно
-    name: Mapped[str] = mapped_column(Text)
-    description: Mapped[str] = mapped_column(Text)
-    price: Mapped[int]
-    category_id: Mapped[int] = mapped_column(ForeignKey('categories.id'))
-    hidden_content: Mapped[str] = mapped_column(Text)
-    category: Mapped["Category"] = relationship("Category", back_populates="products")
-    buyers: Mapped[List["Profile"]] = relationship(
-        "Profile", secondary="purchases", back_populates="purchased_products"
-    )
+    __tablename__ = 'product'
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name: Mapped[str] = mapped_column(String(50), nullable=False)
+    category_id: Mapped[int] = mapped_column(ForeignKey('category.id'), nullable=False)
 
-# Таблица ассоциаций для связи пользователей и товаров
-purchases_table = Table(
-    'purchases', Base.metadata,
-    Column('user_id', Integer, ForeignKey('profiles.user_id'), primary_key=True),
-    Column('product_id', Integer, ForeignKey('products.id'), primary_key=True),
-    Column('purchase_date', TIMESTAMP)
-)
-
-Profile.purchased_products = relationship(
-    "Product", secondary=purchases_table, back_populates="buyers"
-)
+    # Связь с категорией
+    category = relationship("Category", back_populates="products")
+    # Связь с пользователями через промежуточную таблицу
+    users = relationship("User", secondary=user_products, back_populates="purchased_products")

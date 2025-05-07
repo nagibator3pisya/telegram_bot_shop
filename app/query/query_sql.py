@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.exc import IntegrityError
 
-
+from app.config import logger
 from database.database import engine, async_session_maker
 from models.models import User, Profile
 # на всякий случай изучить как работает
@@ -48,3 +48,11 @@ async def reg_user(telegram_id: int,
         await session.rollback()
     finally:
         await engine.dispose()  # Закрываем сессию
+
+
+async def get_user_profile(user_id: int, session):
+    logger.info(f"Fetching profile for user_id: {user_id}")
+    result = await session.execute(select(User).filter(User.id))
+    user_profile = result.scalar_one_or_none()
+    logger.info(f"User profile found: {user_profile}")
+    return user_profile
