@@ -6,7 +6,9 @@ from sqlalchemy.exc import IntegrityError
 
 from app.config import logger
 from database.database import engine, async_session_maker
-from models.models import User, Profile
+from models.models import User, Profile, Category
+
+
 # на всякий случай изучить как работает
 class DatabaseMiddleware(BaseMiddleware):
     async def __call__(
@@ -57,3 +59,9 @@ async def get_user_profile(user_id: int, session):
     logger.info(f"User profile found: {user_profile}")
     return user_profile
 
+
+
+async def get_category(session):
+    result = await session.execute(select(Category))
+    categories = result.scalars().all()
+    return categories

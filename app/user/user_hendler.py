@@ -1,8 +1,9 @@
 from aiogram import Router, types
 from aiogram.filters import Command
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 from app.config import logger
-from app.query.query_sql import reg_user, get_user_profile
+from app.query.query_sql import reg_user, get_user_profile, get_category
 from app.user.kb_user import ease_link_kb
 
 user_router = Router()
@@ -20,21 +21,38 @@ async def start(message: types.Message ,session):
     await message.answer('Добро пожаловать',reply_markup=ease_link_kb())
 
 
-async def profile(message: types.Message, session):
+@user_router.message(lambda message: message.text == 'Профиль')
+async def get_person(message: types.Message, session):
     user_id = message.from_user.id
     user_profile = await get_user_profile(user_id, session)
-    profile_info = (
-        f"Профиль:\n"
-        f"ID: {user_profile.id}\n"
-        f"Telegram ID: {user_profile.telegram_id}\n"
-        f"Username: {user_profile.username}\n"
-        f"First Name: {user_profile.first_name}\n"
-        f"Last Name: {user_profile.last_name}\n"
+
+    if user_profile:
+        profile_info = (
+            f"👤 Профиль:\n"
+            f"<b>ID</b>: {user_profile.telegram_id}\n"
+            f"<b>Логин:</b>:  {user_profile.username}\n"
+            f"<b>Имя</b>: {user_profile.first_name}\n"
+            f"<b>Фамилия</b>: {user_profile.last_name}\n"
         )
-    await message.answer(profile_info)
+        await message.answer(profile_info)
 
 
-@user_router.message(lambda message: message.text == 'Профиль')
-async def handle_profile_button(message: types.Message):
-    profile_data = profile()
-    await message.reply(profile_data)
+
+
+@user_router.message(lambda message: message.text == 'Категории')
+async def category(message: types.Message, session):
+    categories = await get_category(session=session)
+
+    # список строк с кнопками
+    inline_kb = []
+    for category in categories:
+        inline_kb.append([InlineKeyboardButton(text=category.name, callback_data=f"category_{category.id}")])
+
+    # Создаем клавиатуру
+    keyboard = InlineKeyboardMarkup(inline_keyboard=inline_kb)
+    await message.answer("Выберите категорию:", reply_markup=keyboard)
+
+
+@user_router.callback_query(text = 'category_')
+async def callback_category():
+    pass
