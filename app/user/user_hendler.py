@@ -46,19 +46,16 @@ async def get_person(message: types.Message, session):
 @user_router.message(lambda message: message.text == 'Категории')
 async def category(message: types.Message, session):
     categories = await get_category(session=session)
-
-    # список строк с кнопками
     inline_kb = []
     for category in categories:
         inline_kb.append([InlineKeyboardButton(text=category.name, callback_data=f"category_")])
-
-    # Создаем клавиатуру
     keyboard = InlineKeyboardMarkup(inline_keyboard=inline_kb)
     await message.answer("Выберите категорию:", reply_markup=keyboard)
 
-
+#
 @user_router.callback_query(lambda call: call.data.startswith('category_'))
-async def process_category(callback_query: CallbackQuery, session):
+async def process_category(callback_query: CallbackQuery, data):
+    session = data['session']
     category_id = int(callback_query.data.split('_')[1])
     products = await get_products_by_category(session=session, category_id=category_id)
     response = "Продукты в выбранной категории:\n"
