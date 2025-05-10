@@ -6,7 +6,7 @@ from sqlalchemy.exc import IntegrityError
 
 from app.config import logger
 from database.database import engine, async_session_maker
-from models.models import User, Profile, Category
+from models.models import User, Profile, Category, Product
 
 
 # на всякий случай изучить как работает
@@ -18,6 +18,7 @@ class DatabaseMiddleware(BaseMiddleware):
         data: dict
     ) -> any:
         async with async_session_maker() as session:
+            print("Session created:", session)
             data["session"] = session
             return await handler(event, data)
 
@@ -65,3 +66,13 @@ async def get_category(session):
     result = await session.execute(select(Category))
     categories = result.scalars().all()
     return categories
+
+
+
+async def get_products_by_category(session,category_id):
+    result = await session.execute(select(Product).where(Product.category_id == category_id))
+    products = result.scalars().all()
+    return products
+
+
+

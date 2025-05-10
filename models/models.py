@@ -44,11 +44,15 @@ class Category(Base):
     # Связь с продуктами
     products = relationship("Product", back_populates="category")
 
+
+
 class Product(Base):
     __tablename__ = 'product'
     id = Column(Integer, primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(String(50), nullable=False)
     category_id: Mapped[int] = mapped_column(ForeignKey('category.id'), nullable=False)
+    Description: Mapped[str] = mapped_column(Text)
+    price: Mapped[int] = mapped_column(Integer)
 
     # Связь с категорией
     category = relationship("Category", back_populates="products")

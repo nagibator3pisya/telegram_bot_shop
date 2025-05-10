@@ -37,5 +37,6 @@ logger = logging.getLogger(__name__)
 
 bot = Bot(token=settings.BOT_TOKEN,default=DefaultBotProperties(parse_mode=ParseMode.HTML))
 bd = Dispatcher(storage=MemoryStorage())
+
 database_url = settings.get_db_url()
 print(database_url)

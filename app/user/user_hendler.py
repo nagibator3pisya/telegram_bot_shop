@@ -1,15 +1,19 @@
-from aiogram import Router, types
+from random import randint
+
+from aiogram import Router, types, F
 from aiogram.filters import Command
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import logger
-from app.query.query_sql import reg_user, get_user_profile, get_category
+from app.query.query_sql import reg_user, get_user_profile, get_category, get_products_by_category
 from app.user.kb_user import ease_link_kb
 
 user_router = Router()
 
+
 @user_router.message(Command('start'))
-async def start(message: types.Message ,session):
+async def start(message: types.Message, session):
     telegram_id = message.from_user.id
     username = message.from_user.username
     first_name = message.from_user.first_name
@@ -46,13 +50,23 @@ async def category(message: types.Message, session):
     # список строк с кнопками
     inline_kb = []
     for category in categories:
-        inline_kb.append([InlineKeyboardButton(text=category.name, callback_data=f"category_{category.id}")])
+        inline_kb.append([InlineKeyboardButton(text=category.name, callback_data=f"category_")])
 
     # Создаем клавиатуру
     keyboard = InlineKeyboardMarkup(inline_keyboard=inline_kb)
     await message.answer("Выберите категорию:", reply_markup=keyboard)
 
 
-@user_router.callback_query(text = 'category_')
-async def callback_category():
-    pass
+@user_router.callback_query(lambda call: call.data.startswith('category_'))
+async def process_category(callback_query: CallbackQuery, session):
+    category_id = int(callback_query.data.split('_')[1])
+    products = await get_products_by_category(session=session, category_id=category_id)
+    response = "Продукты в выбранной категории:\n"
+    for product in products:
+        response += f"{product.name}\n"
+
+    await callback_query.answer()
+    await callback_query.message.answer(response)
+
+
+
