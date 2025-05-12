@@ -17,7 +17,7 @@ class User(Base):
     username: Mapped[str] = mapped_column(String(50))
     first_name: Mapped[str] = mapped_column(String(50))
     last_name: Mapped[str] = mapped_column(String(50))
-
+    star: Mapped[int] = mapped_column(Integer,default=0)
     # Связь с профилем
     profile = relationship("Profile", back_populates="user", uselist=False)
     # Связь с продуктами через промежуточную таблицу

@@ -1,3 +1,5 @@
+from itertools import product
+
 from aiogram import types, BaseMiddleware
 from aiogram.types import TelegramObject
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -73,6 +75,31 @@ async def get_user_profile(user_id: int, session):
     user_profile = result.scalar_one_or_none()
     logger.info(f"User profile found: {user_profile}")
     return user_profile
+
+
+@connection
+async def get_product_price(product_id, session):
+    result = await session.execute(select(Product).where(Product.id == product_id))
+    product = result.scalars().first()
+    return product.price if product else None
+
+
+
+
+@connection
+async def deduct_stars(user_id: int, stars: int, session):
+    result = await session.execute(select(User).where(User.id == user_id))
+    user = result.scalars().first()
+
+    if user and user.stars >= stars:
+        user.stars -= stars
+        await session.commit()
+        return True
+    return False
+
+
+
+
 
 
 @connection
