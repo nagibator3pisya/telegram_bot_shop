@@ -1,12 +1,15 @@
+from gc import callbacks
 from random import randint
 
 from aiogram import Router, types, F
 from aiogram.filters import Command
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
+from aiogram.fsm.context import FSMContext
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery, KeyboardButton, ReplyKeyboardMarkup
+from aiogram.utils.keyboard import ReplyKeyboardBuilder
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import logger
-from app.query.query_sql import reg_user, get_user_profile, get_category, get_products_by_category
+from app.query.query_sql import reg_user, get_user_profile, get_category, get_products_by_category, connection
 from app.user.kb_user import ease_link_kb
 
 user_router = Router()
@@ -40,30 +43,40 @@ async def get_person(message: types.Message, session):
         )
         await message.answer(profile_info)
 
+   # for category in categories:
+    #     inline_kb.append([InlineKeyboardButton(text=category.name, callback_data=f"category_{category.id}")])
+    # keyboard = InlineKeyboardMarkup(inline_keyboard=inline_kb)
 
+# ,callbacks=f'category_{i.id}
 
 
 @user_router.message(lambda message: message.text == 'Категории')
-async def category(message: types.Message, session):
+async def category(message: types.Message,session):
     categories = await get_category(session=session)
-    inline_kb = []
+    kb = []
     for category in categories:
-        inline_kb.append([InlineKeyboardButton(text=category.name, callback_data=f"category_")])
-    keyboard = InlineKeyboardMarkup(inline_keyboard=inline_kb)
+        kb.append([InlineKeyboardButton(text=category.name, callback_data=f"category_{category.id}")])
+    keyboard = InlineKeyboardMarkup(inline_keyboard=kb)
     await message.answer("Выберите категорию:", reply_markup=keyboard)
 
-#
-@user_router.callback_query(lambda call: call.data.startswith('category_'))
-async def process_category(callback_query: CallbackQuery, data):
-    session = data['session']
-    category_id = int(callback_query.data.split('_')[1])
-    products = await get_products_by_category(session=session, category_id=category_id)
-    response = "Продукты в выбранной категории:\n"
-    for product in products:
-        response += f"{product.name}\n"
 
-    await callback_query.answer()
-    await callback_query.message.answer(response)
+
+@user_router.callback_query(lambda c: c.data and c.data.startswith('category_'))
+async def process_category(callback_query: types.CallbackQuery):
+    category_id = int(callback_query.data.split('_')[1])
+    await callback_query.answer(f"Вы выбрали категорию: {category_id}")
+
+    products = await get_products_by_category(category_id=category_id)
+
+    if products:
+        product_list = "\n".join([f"{product.name} - {product.price}" for product in products])
+        await callback_query.message.answer(f"Продукты в категории:\n{product_list}")
+    else:
+        await callback_query.message.answer("В этой категории нет продуктов.")
+
+
+
+
 
 
 
