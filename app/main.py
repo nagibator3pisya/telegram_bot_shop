@@ -1,12 +1,8 @@
 import asyncio
-
-from aiogram import Dispatcher
-
 from app.config import bd, bot
-from app.query.query_sql import DatabaseMiddleware
 from app.user.user_hendler import user_router
 
-bd.message.middleware(DatabaseMiddleware())
+
 
 
 bd.include_router(user_router)

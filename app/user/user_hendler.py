@@ -16,22 +16,22 @@ user_router = Router()
 
 
 @user_router.message(Command('start'))
-async def start(message: types.Message, session):
+async def start(message: types.Message):
     telegram_id = message.from_user.id
     username = message.from_user.username
     first_name = message.from_user.first_name
     last_name = message.from_user.last_name
     logger.info(f"Registering user: {telegram_id}, {username}, {first_name}, {last_name}")
-    await reg_user(session=session,telegram_id=telegram_id, username=username, first_name=first_name,
+    await reg_user(telegram_id=telegram_id, username=username, first_name=first_name,
                         last_name=last_name)
 
     await message.answer('Добро пожаловать',reply_markup=ease_link_kb())
 
 
 @user_router.message(lambda message: message.text == 'Профиль')
-async def get_person(message: types.Message, session):
+async def get_person(message: types.Message):
     user_id = message.from_user.id
-    user_profile = await get_user_profile(user_id, session)
+    user_profile = await get_user_profile(user_id)
 
     if user_profile:
         profile_info = (
@@ -51,8 +51,8 @@ async def get_person(message: types.Message, session):
 
 
 @user_router.message(lambda message: message.text == 'Категории')
-async def category(message: types.Message,session):
-    categories = await get_category(session=session)
+async def category(message: types.Message):
+    categories = await get_category()
     kb = []
     for category in categories:
         kb.append([InlineKeyboardButton(text=category.name, callback_data=f"category_{category.id}")])
@@ -61,18 +61,35 @@ async def category(message: types.Message,session):
 
 
 
+from aiogram import types
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+
 @user_router.callback_query(lambda c: c.data and c.data.startswith('category_'))
 async def process_category(callback_query: types.CallbackQuery):
     category_id = int(callback_query.data.split('_')[1])
     await callback_query.answer(f"Вы выбрали категорию: {category_id}")
 
     products = await get_products_by_category(category_id=category_id)
-
     if products:
-        product_list = "\n".join([f"{product.name} - {product.price}" for product in products])
-        await callback_query.message.answer(f"Продукты в категории:\n{product_list}")
+        for product in products:
+            # Создаем инлайн-кнопку для оплаты
+            payment_button = InlineKeyboardButton(
+                text=f"Оплатить {product.price}",
+                url="https://your-payment-provider-link.com"  # Замените на реальную ссылку для оплаты
+            )
+
+            # Создаем клавиатуру с кнопкой
+            keyboard = InlineKeyboardMarkup(inline_keyboard=[[payment_button]])
+
+            await callback_query.message.answer(
+                f"<b>{product.name}</b>\n"
+                f"{product.Description}\n"
+                f"Цена: {product.price}",
+                reply_markup=keyboard
+            )
     else:
         await callback_query.message.answer("В этой категории нет продуктов.")
+
 
 
 

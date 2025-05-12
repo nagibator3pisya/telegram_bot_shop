@@ -85,7 +85,7 @@ async def get_category(session):
 
 
 @connection
-async def get_products_by_category(category_id,session: AsyncSession):
+async def get_products_by_category(category_id,session):
     result = await session.execute(select(Product).where(Product.category_id == category_id))
     products = result.scalars().all()
     return products
