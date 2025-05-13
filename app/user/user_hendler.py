@@ -45,11 +45,7 @@ async def get_person(message: types.Message):
         )
         await message.answer(profile_info)
 
-   # for category in categories:
-    #     inline_kb.append([InlineKeyboardButton(text=category.name, callback_data=f"category_{category.id}")])
-    # keyboard = InlineKeyboardMarkup(inline_keyboard=inline_kb)
 
-# ,callbacks=f'category_{i.id}
 
 
 @user_router.message(lambda message: message.text == 'Категории')
@@ -63,6 +59,20 @@ async def category(message: types.Message):
 
 
 
+async def price(category_id: int) -> InlineKeyboardMarkup:
+    products = await get_products_by_category(category_id=category_id)
+    if products:
+        for product in products:
+            # Создаем инлайн-кнопку для оплаты звездами
+            payment_button = InlineKeyboardButton(
+                text=f"Оплатить {product.price} ⭐️",
+                callback_data=f"pay_stars_{product.id}_{category_id}",  # Включите category_id в данные обратного вызова
+                pay=True
+            )
+            keyboard = InlineKeyboardMarkup(inline_keyboard=[[payment_button]])
+            return keyboard
+    return None
+
 
 @user_router.callback_query(lambda c: c.data and c.data.startswith('category_'))
 async def process_category(callback_query: types.CallbackQuery):
@@ -72,24 +82,10 @@ async def process_category(callback_query: types.CallbackQuery):
     products = await get_products_by_category(category_id=category_id)
     if products:
         for product in products:
-            # Создаем инлайн-кнопку для оплаты звездами
-            payment_button = InlineKeyboardButton(
-                text=f"Оплатить {product.price} ⭐️",
-                callback_data=f"pay_stars_{product.id}",
-                pay=True
-            )
-            # # Создаем инлайн-кнопку для тестового платежа
-            # test_payment_button = InlineKeyboardButton(
-            #     text="Тестовый платеж",
-            #     callback_data=f"test_payment_{product.id}"
-            # )
-            # Создаем клавиатуру с кнопкой
-            keyboard = InlineKeyboardMarkup(inline_keyboard=[[payment_button]])
-
+            keyboard = await price(category_id)
             await callback_query.message.answer(
                 f"<b>{product.name}</b>\n"
-                f"{product.Description}\n"
-                f"Цена:{product.price}⭐️",
+                f"{product.Description}\n",
                 reply_markup=keyboard
             )
     else:
@@ -100,29 +96,23 @@ async def process_category(callback_query: types.CallbackQuery):
 
 @user_router.callback_query(lambda c: c.data and c.data.startswith('pay_stars_'))
 async def process_star_payment(callback_query: types.CallbackQuery):
-    product_id = int(callback_query.data.split('_')[2])
+    data = callback_query.data.split('_')
+    product_id = int(data[2])
     user_id = callback_query.from_user.id
 
     product_price = await get_product_price(product_id)
     prices = [LabeledPrice(label="XTR", amount=product_price)]
+
     await callback_query.message.answer_invoice(
-        title = 'Покупка',
-        description='ыыы',
+        title='Покупка',
+        description='Приобретение товара',
         prices=prices,
         provider_token="",
-        payload=F"pay_stars_{product_id}",
+        payload=f"pay_stars_{product_id}",
         currency="XTR"
     )
 
 
-    # if product_price is not None:
-    #     # Проверяем, достаточно ли звезд у пользователя
-    #     if await deduct_stars(user_id, product_price):
-    #         await callback_query.answer(f"Вы успешно оплатили {product_price} ⭐️!")
-    #     else:
-    #         await callback_query.answer("У вас недостаточно звезд для оплаты.")
-    # else:
-    #     await callback_query.answer("Не удалось получить информацию о продукте.")
 
 @user_router.pre_checkout_query()
 async def pre_checkout_handler(pre_checkout_query: PreCheckoutQuery):
@@ -130,20 +120,7 @@ async def pre_checkout_handler(pre_checkout_query: PreCheckoutQuery):
 
 
 
-# @user_router.callback_query(lambda c: c.data and c.data.startswith('test_payment_'))
-# async def process_test_payment(callback_query: types.CallbackQuery):
-#     product_id = int(callback_query.data.split('_')[2])
-#     user_id = callback_query.from_user.id
-#
-#     # Отправляем тестовый счет
-#     prices = [LabeledPrice(label="Test Payment", amount=0)]  # Сумма в минимальных единицах валюты
-#     await callback_query.message.answer_invoice(
-#         title="Тестовый платеж",
-#         description="Описание тестового платежа",
-#         prices=prices,
-#         provider_token="",  # Замените на ваш тестовый токен
-#         payload=f"test_payment_{product_id}",
-#         currency="XTR",  # Используйте поддерживаемую валюту
+
 #     )
 
 
