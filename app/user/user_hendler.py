@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import logger
 from app.query.query_sql import reg_user, get_user_profile, get_category, get_products_by_category, deduct_stars, \
-    get_product_price
+    get_product_price, get_product_link
 from app.user.kb_user import ease_link_kb
 
 user_router = Router()
@@ -97,7 +97,7 @@ async def process_category(callback_query: types.CallbackQuery):
         await callback_query.message.answer("В этой категории нет продуктов.")
 
 
-
+PROW_TEST = '2051251535:TEST:OTk5MDA4ODgxLTAwNQ'
 
 # @user_router.callback_query(lambda c: c.data and c.data.startswith('pay_stars_'))
 # async def process_star_payment(callback_query: types.CallbackQuery):
@@ -123,14 +123,15 @@ async def process_test_payment(callback_query: types.CallbackQuery):
     user_id = callback_query.from_user.id
 
     # Отправляем тестовый счет
-    prices = [LabeledPrice(label="Test Payment", amount=1)]  # Сумма в минимальных единицах валюты
+    prices = [LabeledPrice(label="Test Payment", amount=42000)]  # Сумма в минимальных единицах валюты
     await callback_query.message.answer_invoice(
+
         title="Тестовый платеж",
         description="Описание тестового платежа",
         prices=prices,
-        provider_token="unique_invoice_payload",
+        provider_token=PROW_TEST,
         payload=f"test_payment_{product_id}",
-        currency="XTR",
+        currency='rub',
     )
 
 @user_router.pre_checkout_query()
@@ -139,7 +140,17 @@ async def pre_checkout_handler(pre_checkout_query: PreCheckoutQuery):
     await pre_checkout_query.answer(ok=True)
 
 async def successful_payment_handler(message: Message):
-    await message.answer("Спасибо за тестовый платеж!")
+    # Extract product_id from the payload
+    payload = message.successful_payment.invoice_payload
+    product_id = int(payload.split('_')[2])
+
+    # Retrieve the product from the database
+    product = await get_product_link(product_id)
+
+    if product and product.private_link:
+        await message.answer(f"Спасибо за покупку! Вот ваша ссылка: {product.private_link}")
+    else:
+        await message.answer("Спасибо за покупку! К сожалению, ссылка на ресурс недоступна.")
 
 
 

@@ -53,7 +53,7 @@ class Product(Base):
     category_id: Mapped[int] = mapped_column(ForeignKey('category.id'), nullable=False)
     Description: Mapped[str] = mapped_column(Text)
     price: Mapped[int] = mapped_column(Integer)
-
+    private_link: Mapped[str] = mapped_column(String(255))
     # Связь с категорией
     category = relationship("Category", back_populates="products")
     # Связь с пользователями через промежуточную таблицу
