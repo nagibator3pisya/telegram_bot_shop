@@ -30,7 +30,7 @@ async def start(message: types.Message):
     await message.answer('Добро пожаловать',reply_markup=ease_link_kb())
 
 
-@user_router.message(lambda message: message.text == 'Профиль')
+@user_router.message(lambda message: message.text == '👥Профиль')
 async def get_person(message: types.Message):
     user_id = message.from_user.id
     user_profile = await get_user_profile(user_id)
@@ -39,16 +39,18 @@ async def get_person(message: types.Message):
         profile_info = (
             f"👤 Профиль:\n"
             f"<b>ID</b>: {user_profile.telegram_id}\n"
-            f"<b>Логин:</b>:  {user_profile.username}\n"
+            f"<b>Логин:</b>  {user_profile.username}\n"
             f"<b>Имя</b>: {user_profile.first_name}\n"
             f"<b>Фамилия</b>: {user_profile.last_name}\n"
         )
         await message.answer(profile_info)
 
+@user_router.message(lambda message: message.text == '✉Тех. поддержка')
+async def administrator(message: types.Message):
+    await message.answer(f'Если у вас остались вопросы по покупке, обращайтесь к администратору @Extosik')
 
 
-
-@user_router.message(lambda message: message.text == 'Категории')
+@user_router.message(lambda message: message.text == '📒Категории')
 async def category(message: types.Message):
     categories = await get_category()
     kb = []
@@ -64,17 +66,13 @@ async def price(category_id: int) -> InlineKeyboardMarkup:
     if products:
         for product in products:
             # Создаем инлайн-кнопку для оплаты звездами
-            # payment_button = InlineKeyboardButton(
-            #     text=f"Оплатить {product.price} ⭐️",
-            #     callback_data=f"pay_stars_{product.id}_{category_id}",  # Включите category_id в данные обратного вызова
-            #     pay=True
-            # )
-            # Создаем инлайн-кнопку для тестового платежа
-            test_payment_button = InlineKeyboardButton(
-                text="Тестовый платеж",
-                callback_data=f"test_payment_{product.id}"
+            payment_button = InlineKeyboardButton(
+                text=f"Оплатить {product.price} ⭐️",
+                callback_data=f"pay_stars_{product.id}_{category_id}",
+                pay=True
             )
-            keyboard = InlineKeyboardMarkup(inline_keyboard=[[test_payment_button]])
+
+            keyboard = InlineKeyboardMarkup(inline_keyboard=[[payment_button]])
             return keyboard
     return None
 
@@ -97,56 +95,36 @@ async def process_category(callback_query: types.CallbackQuery):
         await callback_query.message.answer("В этой категории нет продуктов.")
 
 
-PROW_TEST = '2051251535:TEST:OTk5MDA4ODgxLTAwNQ'
 
-# @user_router.callback_query(lambda c: c.data and c.data.startswith('pay_stars_'))
-# async def process_star_payment(callback_query: types.CallbackQuery):
-#     data = callback_query.data.split('_')
-#     product_id = int(data[2])
-#     user_id = callback_query.from_user.id
-#
-#     product_price = await get_product_price(product_id)
-#     prices = [LabeledPrice(label="XTR", amount=product_price)]
-#
-#     await callback_query.message.answer_invoice(
-#         title='Покупка',
-#         description='Приобретение товара',
-#         prices=prices,
-#         provider_token="",
-#         payload=f"pay_stars_{product_id}",
-#         currency="XTR"
-#     )
 
-@user_router.callback_query(lambda c: c.data and c.data.startswith('test_payment_'))
-async def process_test_payment(callback_query: types.CallbackQuery):
-    product_id = int(callback_query.data.split('_')[2])
+@user_router.callback_query(lambda c: c.data and c.data.startswith('pay_stars_'))
+async def process_star_payment(callback_query: types.CallbackQuery):
+    data = callback_query.data.split('_')
+    product_id = int(data[2])
     user_id = callback_query.from_user.id
 
-    # Отправляем тестовый счет
-    prices = [LabeledPrice(label="Test Payment", amount=42000)]  # Сумма в минимальных единицах валюты
-    await callback_query.message.answer_invoice(
+    product_price = await get_product_price(product_id)
+    prices = [LabeledPrice(label="XTR", amount=product_price)]
 
-        title="Тестовый платеж",
-        description="Описание тестового платежа",
+    await callback_query.message.answer_invoice(
+        title='Покупка',
+        description=f'Наш продукт принесет вам большую радость:)',
         prices=prices,
-        provider_token=PROW_TEST,
-        payload=f"test_payment_{product_id}",
-        currency='rub',
+        provider_token="",
+        payload=f"pay_stars_{product_id}",
+        currency="XTR"
     )
+
+
 
 @user_router.pre_checkout_query()
 async def pre_checkout_handler(pre_checkout_query: PreCheckoutQuery):
-    # Логика для предварительной проверки платежа
     await pre_checkout_query.answer(ok=True)
 
 async def successful_payment_handler(message: Message):
-    # Extract product_id from the payload
     payload = message.successful_payment.invoice_payload
     product_id = int(payload.split('_')[2])
-
-    # Retrieve the product from the database
     product = await get_product_link(product_id)
-
     if product and product.private_link:
         await message.answer(f"Спасибо за покупку! Вот ваша ссылка: {product.private_link}")
     else:
@@ -156,6 +134,5 @@ async def successful_payment_handler(message: Message):
 
 
 
-#     )
 
 

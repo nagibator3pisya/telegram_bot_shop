@@ -25,19 +25,6 @@ def connection(method):
 
     return wrapper
 
-# на всякий случай изучить как работает
-# class DatabaseMiddleware(BaseMiddleware):
-#     async def __call__(
-#         self,
-#         handler,
-#         event: TelegramObject,
-#         data: dict
-#     ) -> any:
-#         async with async_session_maker() as session:
-#             print("Session created:", session)
-#             data["session"] = session
-#             return await handler(event, data)
-
 
 
 @connection
@@ -82,6 +69,7 @@ async def get_product_price(product_id, session):
     result = await session.execute(select(Product).where(Product.id == product_id))
     product = result.scalars().first()
     return product.price if product else None
+
 
 @connection
 async def get_product_link(product_id, session):
