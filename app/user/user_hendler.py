@@ -49,7 +49,7 @@ async def get_person(message: types.Message):
 async def administrator(message: types.Message):
     await message.answer(f'Если у вас остались вопросы по покупке, обращайтесь к администратору @Extosik')
 
-
+к
 @user_router.message(lambda message: message.text == '📒Категории')
 async def category(message: types.Message):
     categories = await get_category()
