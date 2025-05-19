@@ -19,8 +19,6 @@ class Settings(BaseSettings):
     DB_PORT: int
     DB_NAME: str
     BOT_TOKEN: str
-    # ADMINS_IDS: str
-    # DATABASE_SQLITE = 'sqlite+aiosqlite:///data/db.sqlite3'
     model_config = SettingsConfigDict(
         env_file=os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
     )
@@ -35,7 +33,7 @@ settings = Settings()
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-bot = Bot(token=settings.BOT_TOKEN,default=DefaultBotProperties(parse_mode=ParseMode.HTML))
+bot = Bot(token=settings.BOT_TOKEN)
 bd = Dispatcher()
 
 database_url = settings.get_db_url()

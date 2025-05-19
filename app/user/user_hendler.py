@@ -2,6 +2,7 @@ from gc import callbacks
 from random import randint
 
 from aiogram import Router, types, F
+from aiogram.enums import ParseMode
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery, KeyboardButton, \
@@ -60,23 +61,6 @@ async def category(message: types.Message):
     await message.answer("Выберите категорию:", reply_markup=keyboard)
 
 
-
-async def price(category_id: int) -> InlineKeyboardMarkup:
-    products = await get_products_by_category(category_id=category_id)
-    if products:
-        for product in products:
-            # Создаем инлайн-кнопку для оплаты звездами
-            payment_button = InlineKeyboardButton(
-                text=f"Оплатить {product.price} ⭐️",
-                callback_data=f"pay_stars_{product.id}_{category_id}",
-                pay=True
-            )
-
-            keyboard = InlineKeyboardMarkup(inline_keyboard=[[payment_button]])
-            return keyboard
-    return None
-
-
 @user_router.callback_query(lambda c: c.data and c.data.startswith('category_'))
 async def process_category(callback_query: types.CallbackQuery):
     category_id = int(callback_query.data.split('_')[1])
@@ -85,14 +69,38 @@ async def process_category(callback_query: types.CallbackQuery):
     products = await get_products_by_category(category_id=category_id)
     if products:
         for product in products:
-            keyboard = await price(category_id)
+            keyboard = await price(product.id)
             await callback_query.message.answer(
-                f"<b>{product.name}</b>\n"
-                f"{product.Description}\n",
-                reply_markup=keyboard
+                f"🤭{product.name}🤭\n"
+                f"🥵{product.Description}🥵\n",
+                reply_markup=keyboard, parse_mode=ParseMode.HTML
             )
     else:
         await callback_query.message.answer("В этой категории нет продуктов.")
+
+async def price(product_id: int) -> InlineKeyboardMarkup:
+    product = await get_product_link(product_id)  # Получаем продукт по ID
+    if product:
+        payment_button = InlineKeyboardButton(
+            text=f"Оплатить {product.price} ⭐️",
+            callback_data=f"pay_stars_{product.id}",
+            pay=True
+        )
+
+        keyboard = InlineKeyboardMarkup(inline_keyboard=[[payment_button]])
+        return keyboard
+    return None
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -104,6 +112,7 @@ async def process_star_payment(callback_query: types.CallbackQuery):
     user_id = callback_query.from_user.id
 
     product_price = await get_product_price(product_id)
+
     prices = [LabeledPrice(label="XTR", amount=product_price)]
 
     await callback_query.message.answer_invoice(

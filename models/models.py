@@ -40,7 +40,7 @@ class Category(Base):
     __tablename__ = 'category'
     id = Column(Integer, primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(String(50), nullable=False)
-
+    description: Mapped[str] = mapped_column(Text)
     # Связь с продуктами
     products = relationship("Product", back_populates="category")
 
