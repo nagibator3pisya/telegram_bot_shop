@@ -44,7 +44,7 @@ async def get_person(message: types.Message):
             f"<b>Имя</b>: {user_profile.first_name}\n"
             f"<b>Фамилия</b>: {user_profile.last_name}\n"
         )
-        await message.answer(profile_info)
+        await message.answer(profile_info, parse_mode=ParseMode.HTML)
 
 @user_router.message(lambda message: message.text == '✉Тех. поддержка')
 async def administrator(message: types.Message):
