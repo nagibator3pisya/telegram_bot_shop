@@ -33,8 +33,8 @@ async def start(message: types.Message):
 
 @user_router.message(lambda message: message.text == '👥Профиль')
 async def get_person(message: types.Message):
-    user_id = message.from_user.id
-    user_profile = await get_user_profile(user_id)
+    telegram_id = message.from_user.id
+    user_profile = await get_user_profile(telegram_id)
 
     if user_profile:
         profile_info = (
@@ -45,6 +45,8 @@ async def get_person(message: types.Message):
             f"<b>Фамилия</b>: {user_profile.last_name}\n"
         )
         await message.answer(profile_info, parse_mode=ParseMode.HTML)
+    else:
+        await message.answer("Профиль не найден.")
 
 @user_router.message(lambda message: message.text == '✉Тех. поддержка')
 async def administrator(message: types.Message):

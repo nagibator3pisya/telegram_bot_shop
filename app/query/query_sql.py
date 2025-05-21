@@ -1,3 +1,4 @@
+import asyncio
 from itertools import product
 
 from aiogram import types, BaseMiddleware
@@ -56,12 +57,22 @@ async def reg_user(telegram_id: int,
         await engine.dispose()  # Закрываем сессию
 
 @connection
-async def get_user_profile(user_id: int, session):
-    logger.info(f"Fetching profile for user_id: {user_id}")
-    result = await session.execute(select(User).filter(User.id))
+async def get_user_profile(telegram_id: int, session):
+    logger.info(f"Попытка получить профиль пользователя с Telegram ID: {telegram_id}")
+    result = await session.execute(select(User).filter(User.telegram_id == telegram_id))
     user_profile = result.scalar_one_or_none()
-    logger.info(f"User profile found: {user_profile}")
+
+    if user_profile:
+        logger.info(f"Профиль пользователя найден: {user_profile.username}")
+    else:
+        logger.info("Профиль пользователя не найден.")
+
     return user_profile
+
+
+
+
+
 
 
 @connection
